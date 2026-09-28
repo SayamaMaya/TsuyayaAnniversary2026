@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Live Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.4); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(150, 150, 150, 0.7); }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-animate { animation: fadeIn 0.2s ease-out forwards; }
+    </style>
+</head>
+<body id="appBody" class="bg-gray-100 text-gray-900 font-sans antialiased min-h-screen flex flex-col">
+
+    <header id="mainHeader" class="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-50 shrink-0">
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-1 cursor-pointer">
+                <i class="fa-brands fa-youtube text-red-600 text-3xl"></i>
+                <span class="font-bold text-xl tracking-tighter text-gray-900">LivePlay</span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 sm:space-x-3">
+            <button onclick="toggleLayoutMode()" id="layoutToggleBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium transition flex items-center space-x-2">
+                <i id="layoutIcon" class="fa-solid fa-tablet-screen-button"></i>
+                <span id="layoutText">横並び</span>
+            </button>
+        </div>
+    </header>
+
+    <main id="mainContainer" class="flex-1 max-w-[1700px] w-full mx-auto px-3 sm:px-6 py-4 flex flex-row items-start gap-3 sm:gap-5 min-w-0 box-border overflow-x-hidden">
+        
+        <div id="leftPane" class="flex flex-col space-y-4 flex-1 min-w-0">
+            <div id="videoCard" class="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl flex flex-col group border border-gray-200">
+                <div id="mediaContainer" class="flex-1 relative flex items-center justify-center bg-gray-900 overflow-hidden">
+                    <img id="streamImage" src="https://www.dropbox.com/scl/fi/grwzp2a581hz7m4heo0e7/0_-2026QR-_-Sayama_live.png?rlkey=gdsl87jwg7qid2r9cc21ajc1h&st=jd03qx2k&raw=1" alt="Stream Preview" class="w-full h-full object-contain transition-all duration-300">
+                    <div class="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded flex items-center space-x-1.5 shadow">
+                        <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                        <span>LIVE</span>
+                    </div>
+                    <button onclick="toggleImageFitMode()" class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white text-xs px-2.5 py-1 rounded transition flex items-center space-x-1.5 shadow backdrop-blur-sm">
+                        <i id="imageFitIcon" class="fa-solid fa-expand"></i>
+                        <span id="imageFitText">全体表示</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="videoDetailsCard" class="bg-white border border-gray-200 rounded-xl p-4 space-y-4 shadow-md text-gray-900">
+                <h1 id="displayTitle" class="text-base sm:text-lg font-bold leading-snug break-words">
+                    【記念配信】2周年＆3周年おめでとう！
+                </h1>
+                
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <div id="channelAvatar" class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center font-bold text-lg text-white shadow">
+                            月
+                        </div>
+                        <div>
+                            <div id="displayChannelName" class="font-bold text-sm">月夜々</div>
+                            <div id="subCountText" class="text-xs text-gray-500">登録者数 3000人</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="incrementLike()" class="action-btn bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-thumbs-up text-red-600"></i>
+                            <span id="likeCount">1,234</span>
+                        </button>
+                        <a href="https://hz0sjsejbl78y2om.public.blob.vercel-storage.com/pdf-qr/1789570440985-%E5%AF%84%E3%81%9B%E6%9B%B8%E3%81%8D.pdf" target="_blank" rel="noopener noreferrer" class="action-btn bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-share"></i>
+                            <span>寄せ書き</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="statsBox" class="bg-gray-50 rounded-lg p-3 flex items-center justify-between text-xs text-gray-700 border border-gray-200">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-gray-500">同時視聴者数:</span>
+                        <span id="viewerCount" class="font-bold text-red-500">6</span>
+                        <span>人</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-gray-500">配信時間:</span>
+                        <span id="streamTime" class="font-bold text-gray-800">00:00:00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="rightPane" class="flex flex-col bg-white rounded-xl border border-gray-200 w-[170px] sm:w-[190px] md:w-[210px] lg:w-[230px] shrink-0 min-w-0 overflow-hidden shadow-2xl h-[calc(100vh-120px)] sm:h-[calc(100vh-100px)] max-h-[800px]">
+            <div id="chatHeader" class="px-2 py-2 border-b border-gray-200 flex items-center justify-between bg-gray-50 shrink-0 gap-1">
+                <div class="flex items-center space-x-1 shrink-0">
+                    <i class="fa-solid fa-comments text-red-500 text-xs"></i>
+                    <span id="chatHeaderText" class="font-bold text-[11px] text-gray-800">チャット</span>
+                </div>
+                <div class="flex items-center text-[10px] shrink-0">
+                    <span id="activeSetBadge" class="bg-red-500/20 text-red-600 px-1 py-0.5 rounded font-bold truncate max-w-[65px] sm:max-w-[80px] text-[9px]">寄せ書き</span>
+                </div>
+            </div>
+
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-2 space-y-2 flex flex-col min-h-0 text-xs">
+            </div>
+
+            <div id="chatFooter" class="p-1.5 border-t border-gray-200 bg-gray-50 space-y-1 shrink-0 mt-auto">
+                <div class="flex items-center justify-between text-[10px] text-gray-600 px-0.5 gap-1">
+                    <span id="chatFooterLabel" class="truncate text-[9px] sm:text-[10px]">コメント送信</span>
+                    <button onclick="openSuperChatModal()" class="text-yellow-600 hover:text-yellow-700 font-bold flex items-center space-x-1 bg-yellow-500/10 px-1 py-0.5 rounded transition text-[9px] shrink-0">
+                        <i class="fa-solid fa-dollar-sign text-[8px]"></i>
+                        <span>スパチャ</span>
+                    </button>
+                </div>
+                <form id="chatForm" onsubmit="handleChatSubmit(event)" class="flex items-center gap-1">
+                    <input type="text" id="chatNameInput" placeholder="名前" value="視聴者A" class="chat-input w-9 shrink-0 bg-white text-gray-900 border border-gray-300 rounded px-1 py-0.5 text-[10px] focus:outline-none focus:border-red-500">
+                    <input type="text" id="chatMsgInput" placeholder="コメント..." class="chat-input flex-1 min-w-0 bg-white text-gray-900 border border-gray-300 rounded px-1.5 py-0.5 text-[10px] focus:outline-none focus:border-red-500" required>
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-1.5 py-0.5 rounded text-[10px] font-semibold transition shrink-0">
+                        <i class="fa-solid fa-paper-plane text-[9px]"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="superChatModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div id="scModalBox" class="bg-white text-gray-900 border border-gray-300 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl chat-animate">
+            <div class="flex items-center justify-between border-b border-gray-200 pb-3">
+                <h2 id="scModalTitle" class="text-lg font-bold flex items-center space-x-2 text-yellow-600">
+                    <i class="fa-solid fa-circle-dollar-to-slot"></i>
+                    <span>スーパーチャットを送る</span>
+                </h2>
+                <button onclick="closeSuperChatModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="handleSuperChatSubmit(event)" class="space-y-4 text-sm">
+                <div>
+                    <label class="block font-semibold mb-1">お名前</label>
+                    <input type="text" id="scName" value="視聴者" class="w-full bg-white text-gray-900 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-yellow-500" required>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">金額 (¥)</label>
+                    <select id="scAmount" class="w-full bg-white text-gray-900 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-yellow-500 font-bold">
+                        <option value="500">¥500</option>
+                        <option value="2000">¥2,000</option>
+                        <option value="5000" selected>¥5,000</option>
+                        <option value="10000">¥10,000</option>
+                        <option value="50000">¥50,000</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">メッセージ</label>
+                    <textarea id="scMessage" rows="3" class="w-full bg-white text-gray-900 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-yellow-500 resize-none" required></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-gray-200">
+                    <button type="button" onclick="closeSuperChatModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-full font-semibold transition">キャンセル</button>
+                    <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded-full font-bold transition shadow-lg">購入して送信</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let startTime = Date.now();
+        let autoChatInterval = null;
+        let currentViewers = 6;
+        let likeCount = 1234;
+        let manualLayoutMode = 'side';
+        let imageFitMode = 'contain';
+
+        const fixedComments = [
+            { type: "Comment", name: "目の人", message: "ふとIRIAMで枠に迷い込んでからはや2年、あの頃から素敵な声のまま色んな配信を見せてくれてありがとう！2周年、本当におめでとう！これからもたくさんの挑戦を見守らせてくださいね！" },
+            { type: "SuperChat", name: "雨涙かさ", amount: 5000, message: "おめでとうございます！2度コラボありがとうね！めっちゃ楽しかった！YouTube活動含めたくさんの良いことがありますように～" },
+            { type: "Comment", name: "晴間しまる", message: "周年おめでとう！すっごく応援して気づけば3(2)周年だｗ一生の推し様です。ずっと応援してます！ゆるっとふぁいと！！" },
+            { type: "SuperChat", name: "紅しょうが", amount: 5000, message: "周年おめでと-！！！(∗ ˊωˋ ∗)つやちゃんにとってまた1年最高な年になりますように(´͈ ᐜ `͈ 三 ´͈ ᐜ `͈)" },
+            { type: "Comment", name: "もーそー猫", message: "月夜々ちゃん周年おめでとうございます！！！毎日おはようショート動画に癒されてます！月夜々ちゃんの声おっとり可愛くて大好き！配信とかもろもろめっちゃ頑張ってていつもすごいです！！これからも活動ふぁいとです！！" },
+            { type: "Comment", name: "星結來はのん", message: "つやちゃーん！周年おめでとう！いつも沢山配信していてあまりにも素敵な妹さまだって誇りに思ってます！これからも身体に気をつけて一緒に頑張っていこうね！大好きですわよー！" }
+        ];
+        let fixedIndex = 0;
+
+        function toggleImageFitMode() {
+            const img = document.getElementById('streamImage');
+            const icon = document.getElementById('imageFitIcon');
+            const text = document.getElementById('imageFitText');
+            if (imageFitMode === 'contain') {
+                imageFitMode = 'cover';
+                if (img) img.className = "w-full h-full object-cover transition-all duration-300";
+                if (icon) icon.className = "fa-solid fa-compress";
+                if (text) text.innerText = "フル画面";
+            } else {
+                imageFitMode = 'contain';
+                if (img) img.className = "w-full h-full object-contain transition-all duration-300";
+                if (icon) icon.className = "fa-solid fa-expand";
+                if (text) text.innerText = "全体表示";
+            }
+        }
+
+        function syncChatHeight() {
+            if (manualLayoutMode !== 'side') return;
+            const leftPane = document.getElementById('leftPane');
+            const rightPane = document.getElementById('rightPane');
+            if (leftPane && rightPane && window.innerWidth >= 640) {
+                rightPane.style.height = `${leftPane.offsetHeight}px`;
+            } else if (rightPane) {
+                rightPane.style.height = '';
+            }
+        }
+
+        function updateLayout() {
+            const mainContainer = document.getElementById('mainContainer');
+            const leftPane = document.getElementById('leftPane');
+            const rightPane = document.getElementById('rightPane');
+            const layoutIcon = document.getElementById('layoutIcon');
+            const layoutText = document.getElementById('layoutText');
+
+            if (manualLayoutMode === 'stack') {
+                mainContainer.className = "flex-1 max-w-[1700px] w-full mx-auto p-3 sm:p-4 flex flex-col gap-4 items-center min-w-0 box-border";
+                leftPane.className = "w-full max-w-4xl flex flex-col space-y-4 min-w-0";
+                rightPane.className = "w-full max-w-4xl flex flex-col bg-white rounded-xl border border-gray-200 h-[550px] overflow-hidden shadow-2xl min-w-0 shrink-0";
+                if (layoutIcon) layoutIcon.className = "fa-solid fa-mobile-screen";
+                if (layoutText) layoutText.innerText = "縦並び";
+            } else {
+                mainContainer.className = "flex-1 max-w-[1700px] w-full mx-auto p-2 sm:p-4 flex flex-row items-start gap-2 sm:gap-3 min-w-0 box-border overflow-x-hidden";
+                leftPane.className = "flex flex-col space-y-4 flex-1 min-w-0";
+                rightPane.className = "flex flex-col bg-white rounded-xl border border-gray-200 w-[170px] sm:w-[190px] md:w-[210px] lg:w-[230px] shrink-0 min-w-0 overflow-hidden shadow-2xl h-[calc(100vh-120px)] sm:h-[calc(100vh-100px)] max-h-[800px]";
+                if (layoutIcon) layoutIcon.className = "fa-solid fa-tablet-screen-button";
+                if (layoutText) layoutText.innerText = "横並び";
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateLayout();
+            syncChatHeight();
+            startAutoChat();
+        });
+
+        window.addEventListener('resize', () => {
+            if (manualLayoutMode === 'side') syncChatHeight();
+        });
+
+        function toggleLayoutMode() {
+            manualLayoutMode = manualLayoutMode === 'side' ? 'stack' : 'side';
+            updateLayout();
+            setTimeout(syncChatHeight, 50);
+        }
+
+        const avatarColors = ['bg-blue-600', 'bg-green-600', 'bg-purple-600', 'bg-pink-600', 'bg-indigo-600', 'bg-amber-600', 'bg-teal-600'];
+
+        setInterval(() => {
+            const diff = Math.floor((Date.now() - startTime) / 1000);
+            const hrs = String(Math.floor(diff / 3600)).padStart(2, '0');
+            const mins = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+            const secs = String(diff % 60).padStart(2, '0');
+            const streamTimeEl = document.getElementById('streamTime');
+            if (streamTimeEl) streamTimeEl.innerText = `${hrs}:${mins}:${secs}`;
+        }, 1000);
+
+        function openSuperChatModal() { document.getElementById('superChatModal').classList.remove('hidden'); }
+        function closeSuperChatModal() { document.getElementById('superChatModal').classList.add('hidden'); }
+
+        function handleChatSubmit(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('chatNameInput');
+            const msgInput = document.getElementById('chatMsgInput');
+            if (!msgInput || !msgInput.value.trim()) return;
+            addChatMessage(nameInput ? nameInput.value : '視聴者A', msgInput.value);
+            msgInput.value = '';
+        }
+
+        function handleSuperChatSubmit(event) {
+            event.preventDefault();
+            const name = document.getElementById('scName').value;
+            const amount = document.getElementById('scAmount').value;
+            const message = document.getElementById('scMessage').value;
+            addSuperChat(name, amount, message);
+            closeSuperChatModal();
+            document.getElementById('scMessage').value = '';
+        }
+
+        function addChatMessage(name, text) {
+            const chatContainer = document.getElementById('chatMessages');
+            if (!chatContainer) return;
+            const colorClass = avatarColors[Math.floor(Math.random() * avatarColors.length)];
+            const initial = name ? name.charAt(0) : '？';
+
+            const div = document.createElement('div');
+            div.className = "chat-animate flex items-start space-x-1.5 shrink-0 w-full";
+            div.innerHTML = `
+                <div class="w-5 h-5 rounded-full ${colorClass} flex items-center justify-center text-[9px] font-bold text-white shrink-0 shadow">${escapeHtml(initial)}</div>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center space-x-1"><span class="text-[10px] text-gray-500">${escapeHtml(name)}</span></div>
+                    <p class="text-gray-800 text-[11px] leading-tight mt-0.5 break-all">${escapeHtml(text)}</p>
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function addSuperChat(name, amount, message) {
+            const chatContainer = document.getElementById('chatMessages');
+            if (!chatContainer) return;
+            const numAmount = parseInt(amount);
+            
+            const div = document.createElement('div');
+            div.className = "chat-animate rounded-md overflow-hidden shadow-md border border-white/20 my-1 shrink-0 w-full";
+            div.innerHTML = `
+                <div class="bg-[#c2185b] text-white p-1.5 flex flex-col gap-0.5 text-[10px] font-bold">
+                    <div class="flex items-center justify-between gap-1">
+                        <div class="flex items-center space-x-1 min-w-0">
+                            <div class="w-4 h-4 rounded-full bg-black/20 flex items-center justify-center text-[9px] shrink-0 font-bold">${escapeHtml(name.charAt(0))}</div>
+                            <span class="truncate text-[10px]">${escapeHtml(name)}</span>
+                        </div>
+                        <span class="shrink-0 font-extrabold text-[10px]">¥${numAmount.toLocaleString()}</span>
+                    </div>
+                </div>
+                <div class="bg-[#e91e63] text-white p-1.5 text-[10px] font-medium leading-tight">
+                    <p class="break-all">${escapeHtml(message)}</p>
+                </div>
+            `;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function startAutoChat() {
+            if (autoChatInterval) clearInterval(autoChatInterval);
+            autoChatInterval = setInterval(() => {
+                if (fixedIndex >= fixedComments.length) fixedIndex = 0;
+                const item = fixedComments[fixedIndex];
+                fixedIndex++;
+                if (item.type === "SuperChat") {
+                    addSuperChat(item.name, item.amount || 5000, item.message);
+                } else {
+                    addChatMessage(item.name, item.message);
+                }
+            }, 2500);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+    </script>
+</body>
+</html>
