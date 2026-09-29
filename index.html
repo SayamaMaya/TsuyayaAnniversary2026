@@ -16,6 +16,42 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .chat-animate { animation: fadeIn 0.2s ease-out forwards; }
+
+        .metallic-1 { background: linear-gradient(135deg, #ffffff 0%, #FFBEE3 45%, #f583c3 100%); }
+        .metallic-2 { background: linear-gradient(135deg, #ffffff 0%, #BCCCFF 45%, #7697ff 100%); }
+        .metallic-3 { background: linear-gradient(135deg, #ffffff 0%, #B5B5B5 45%, #808080 100%); }
+        .metallic-4 { background: linear-gradient(135deg, #ffffff 0%, #E1C5B9 45%, #c89c89 100%); }
+
+        @keyframes floatParticle {
+            0% { transform: translateY(0) translateX(0) scale(0.4) rotate(0deg); opacity: 0; }
+            20% { opacity: 0.9; transform: translateY(-40px) translateX(12px) scale(0.9) rotate(45deg); }
+            50% { opacity: 0.7; transform: translateY(-100px) translateX(-15px) scale(1.1) rotate(140deg); }
+            80% { opacity: 0.8; transform: translateY(-160px) translateX(18px) scale(0.8) rotate(260deg); }
+            100% { transform: translateY(-220px) translateX(-8px) scale(0.3) rotate(360deg); opacity: 0; }
+        }
+        .sparkle-particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: floatParticle linear infinite;
+        }
+
+        @keyframes thumbPop {
+            0% { transform: scale(1) rotate(0deg); }
+            35% { transform: scale(1.4) rotate(-15deg); }
+            70% { transform: scale(0.9) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        .like-icon-active {
+            display: inline-block;
+            animation: thumbPop 0.35s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-animate { animation: fadeIn 0.2s ease-out forwards; }
     </style>
 </head>
 <body id="appBody" class="bg-gray-100 text-gray-900 font-sans antialiased min-h-screen flex flex-col">
@@ -39,16 +75,16 @@
         
         <div id="leftPane" class="flex flex-col space-y-4 flex-1 min-w-0">
             <div id="videoCard" class="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl flex flex-col group border border-gray-200">
-                <div id="mediaContainer" class="flex-1 relative flex items-center justify-center bg-gray-900 overflow-hidden">
-                    <img id="streamImage" src="https://www.dropbox.com/scl/fi/abuzrvmcjemln8dtywpnp/0_-2026QR-_-Sayama_live.png?rlkey=ppunbzy1rh7251kiqd19dcszf&st=ojxlgt98&raw=1" alt="Stream Preview" class="w-full h-full object-contain transition-all duration-300">
-                    <div class="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded flex items-center space-x-1.5 shadow">
+                <div id="mediaContainer" onclick="triggerPartyConfetti(event)" class="flex-1 relative flex items-center justify-center bg-gray-900 overflow-hidden cursor-pointer">
+                    <img id="streamImage" src="https://www.dropbox.com/scl/fi/abuzrvmcjemln8dtywpnp/0_-2026QR-_-Sayama_live.png?rlkey=ppunbzy1rh7251kiqd19dcszf&st=iskzezsy&raw=1" alt="Stream Preview" class="w-full h-full object-cover transition-all duration-300 pointer-events-none">
+                    
+                    <div id="sparkleLayer" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+                    <canvas id="confettiCanvas" class="absolute inset-0 pointer-events-none z-10 w-full h-full"></canvas>
+
+                    <div class="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded flex items-center space-x-1.5 shadow pointer-events-none">
                         <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
                         <span>LIVE</span>
                     </div>
-                    <button onclick="toggleImageFitMode()" class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white text-xs px-2.5 py-1 rounded transition flex items-center space-x-1.5 shadow backdrop-blur-sm">
-                        <i id="imageFitIcon" class="fa-solid fa-expand"></i>
-                        <span id="imageFitText">全体表示</span>
-                    </button>
                 </div>
             </div>
 
@@ -68,7 +104,7 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <button onclick="incrementLike()" class="action-btn bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center space-x-1.5">
+                        <button id="likeBtn" onclick="incrementLike()" class="action-btn bg-gray-200 hover:bg-gray-300 text-gray-800 w-[76px] h-[30px] rounded-full text-xs font-semibold flex items-center justify-center space-x-1.5 shrink-0 select-none">
                             <i class="fa-solid fa-thumbs-up text-red-600"></i>
                             <span id="likeCount">288</span>
                         </button>
@@ -165,11 +201,12 @@
 
     <script>
         let startTime = Date.now();
-        let autoChatInterval = null;
+        let autoChatTimeout = null;
+        let likeCount = 288;
         let currentViewers = 6;
-        let likeCount = 1234;
         let manualLayoutMode = 'side';
-        let imageFitMode = 'contain';
+
+        const metallicClasses = ['metallic-1', 'metallic-2', 'metallic-3', 'metallic-4'];
 
         const fixedComments = [
             { type: "Comment", name: "目の人", message: "ふとIRIAMで枠に迷い込んでからはや2年、あの頃から素敵な声のまま色んな配信を見せてくれてありがとう！2周年、本当におめでとう！これからもたくさんの挑戦を見守らせてくださいね！" },
@@ -181,20 +218,163 @@
         ];
         let fixedIndex = 0;
 
-        function toggleImageFitMode() {
-            const img = document.getElementById('streamImage');
-            const icon = document.getElementById('imageFitIcon');
-            const text = document.getElementById('imageFitText');
-            if (imageFitMode === 'contain') {
-                imageFitMode = 'cover';
-                if (img) img.className = "w-full h-full object-cover transition-all duration-300";
-                if (icon) icon.className = "fa-solid fa-compress";
-                if (text) text.innerText = "フル画面";
+        function initSparkles() {
+            const container = document.getElementById('sparkleLayer');
+            if (!container) return;
+            const particleCount = 22;
+            for (let i = 0; i < particleCount; i++) {
+                createSparkle(container, true);
+            }
+        }
+
+        function createSparkle(container, initial = false) {
+            const p = document.createElement('div');
+            const cls = metallicClasses[Math.floor(Math.random() * metallicClasses.length)];
+            const size = Math.random() * 7 + 2.5;
+            const left = Math.random() * 100;
+            const top = initial ? Math.random() * 100 : 105;
+            const duration = Math.random() * 3.5 + 2.2;
+            const delay = initial ? Math.random() * 3.0 : Math.random() * 0.8;
+
+            p.className = `sparkle-particle ${cls}`;
+            p.style.width = `${size}px`;
+            p.style.height = `${size}px`;
+            p.style.left = `${left}%`;
+            p.style.top = `${top}%`;
+            p.style.animationDuration = `${duration}s`;
+            p.style.animationDelay = `${delay}s`;
+
+            container.appendChild(p);
+
+            setTimeout(() => {
+                p.remove();
+                createSparkle(container, false);
+            }, (duration + delay) * 1000);
+        }
+
+        let confettiParticles = [];
+        let confettiAnimationId = null;
+
+        class ConfettiParticle {
+            constructor(x, y, vx, vy, color, dpr) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.color = color;
+                this.width = (Math.random() * 8 + 6) * dpr;
+                this.height = (Math.random() * 12 + 8) * dpr;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.vRot = (Math.random() - 0.5) * 0.22;
+                this.tilt = Math.random() * Math.PI;
+                this.vTilt = Math.random() * 0.15 + 0.05;
+                this.gravity = (0.38 + Math.random() * 0.12) * dpr;
+                this.drag = 0.985;
+            }
+
+            update() {
+                this.vx *= this.drag;
+                this.vy *= this.drag;
+                this.vy += this.gravity;
+
+                this.x += this.vx;
+                this.y += this.vy;
+                this.rotation += this.vRot;
+                this.tilt += this.vTilt;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                let scaleY = Math.sin(this.tilt);
+                if (Math.abs(scaleY) < 0.15) {
+                    scaleY = scaleY < 0 ? -0.15 : 0.15;
+                }
+                ctx.scale(1, scaleY);
+
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+                
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(-this.width / 2, -this.height / 2, this.width, this.height);
+
+                ctx.restore();
+            }
+        }
+
+        function triggerPartyConfetti(event) {
+            const canvas = document.getElementById('confettiCanvas');
+            if (!canvas) return;
+
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+
+            canvas.width = Math.floor(rect.width * dpr);
+            canvas.height = Math.floor(rect.height * dpr);
+
+            const colors = ['#FFBEE3', '#BCCCFF', '#B5B5B5', '#E1C5B9'];
+
+            const origins = [
+                { x: (rect.width * 0.02) * dpr, angleBase: -Math.PI / 2.6 },
+                { x: (rect.width * 0.98) * dpr, angleBase: -Math.PI + Math.PI / 2.6 }
+            ];
+
+            origins.forEach(origin => {
+                const count = 38;
+                for (let i = 0; i < count; i++) {
+                    const angle = origin.angleBase + (Math.random() - 0.5) * 0.55;
+                    const speed = (Math.random() * 14 + 16) * dpr;
+                    const vx = Math.cos(angle) * speed;
+                    const vy = Math.sin(angle) * speed;
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+
+                    confettiParticles.push(new ConfettiParticle(origin.x, canvas.height, vx, vy, color, dpr));
+                }
+            });
+
+            if (!confettiAnimationId) {
+                animateConfetti();
+            }
+        }
+
+        function animateConfetti() {
+            const canvas = document.getElementById('confettiCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = confettiParticles.length - 1; i >= 0; i--) {
+                const p = confettiParticles[i];
+                p.update();
+                p.draw(ctx);
+
+                if (p.y > canvas.height + 50 * dpr) {
+                    confettiParticles.splice(i, 1);
+                }
+            }
+
+            if (confettiParticles.length > 0) {
+                confettiAnimationId = requestAnimationFrame(animateConfetti);
             } else {
-                imageFitMode = 'contain';
-                if (img) img.className = "w-full h-full object-contain transition-all duration-300";
-                if (icon) icon.className = "fa-solid fa-expand";
-                if (text) text.innerText = "全体表示";
+                confettiAnimationId = null;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function incrementLike() {
+            likeCount++;
+            const likeCountEl = document.getElementById('likeCount');
+            const likeBtn = document.getElementById('likeBtn');
+            const likeIcon = likeBtn ? likeBtn.querySelector('i') : null;
+            if (likeCountEl) likeCountEl.innerText = likeCount.toLocaleString();
+            if (likeIcon) {
+                likeIcon.classList.remove('like-icon-active');
+                void likeIcon.offsetWidth;
+                likeIcon.classList.add('like-icon-active');
             }
         }
 
@@ -235,6 +415,8 @@
             updateLayout();
             syncChatHeight();
             startAutoChat();
+            initSparkles();
+            startViewerFlucuation();
         });
 
         window.addEventListener('resize', () => {
@@ -257,6 +439,17 @@
             const streamTimeEl = document.getElementById('streamTime');
             if (streamTimeEl) streamTimeEl.innerText = `${hrs}:${mins}:${secs}`;
         }, 1000);
+
+        function startViewerFlucuation() {
+            setInterval(() => {
+                if (Math.random() < 0.45) {
+                    const delta = Math.floor(Math.random() * 3) - 1;
+                    currentViewers = Math.max(4, Math.min(15, currentViewers + delta));
+                    const viewerEl = document.getElementById('viewerCount');
+                    if (viewerEl) viewerEl.innerText = currentViewers;
+                }
+            }, 3500);
+        }
 
         function openSuperChatModal() { document.getElementById('superChatModal').classList.remove('hidden'); }
         function closeSuperChatModal() { document.getElementById('superChatModal').classList.add('hidden'); }
@@ -296,7 +489,7 @@
                 </div>
             `;
             chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
         }
 
         function addSuperChat(name, amount, message) {
@@ -321,12 +514,12 @@
                 </div>
             `;
             chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
         }
 
-        function startAutoChat() {
-            if (autoChatInterval) clearInterval(autoChatInterval);
-            autoChatInterval = setInterval(() => {
+        function scheduleNextAutoChat() {
+            const randomDelay = Math.floor(Math.random() * 3000) + 1200;
+            autoChatTimeout = setTimeout(() => {
                 if (fixedIndex >= fixedComments.length) fixedIndex = 0;
                 const item = fixedComments[fixedIndex];
                 fixedIndex++;
@@ -335,7 +528,13 @@
                 } else {
                     addChatMessage(item.name, item.message);
                 }
-            }, 2500);
+                scheduleNextAutoChat();
+            }, randomDelay);
+        }
+
+        function startAutoChat() {
+            if (autoChatTimeout) clearTimeout(autoChatTimeout);
+            scheduleNextAutoChat();
         }
 
         function escapeHtml(str) {
